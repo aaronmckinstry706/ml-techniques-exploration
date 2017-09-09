@@ -3,7 +3,6 @@ package amck.mlmodels;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Assert;
@@ -95,30 +94,28 @@ public class NaiveBayesModelTest {
         
         List<Double> logPriors = Arrays.asList(Math.log(12.0/17.0), Math.log(5.0/17.0));
         
-        ArrayList<ArrayList<Double>> expectedPredictions = new ArrayList<ArrayList<Double>>();
-        expectedPredictions.add(new ArrayList<Double>(Arrays.asList(
+        List<List<Double>> expectedPredictions = new ArrayList<List<Double>>();
+        expectedPredictions.add(Arrays.asList(
                 Math.log(2.0/3.0) + Math.log(1.0/4.0) + logPriors.get(0),
-                Math.log(2.0/5.0) + Math.log(4.0/5.0) + logPriors.get(1))));
-        expectedPredictions.add(new ArrayList<Double>(Arrays.asList(
+                Math.log(2.0/5.0) + Math.log(4.0/5.0) + logPriors.get(1)));
+        expectedPredictions.add(Arrays.asList(
                 Math.log(2.0/3.0) + Math.log(3.0/4.0) + logPriors.get(0),
-                Math.log(2.0/5.0) + Math.log(1.0/5.0) + logPriors.get(1))));
-        expectedPredictions.add(new ArrayList<Double>(Arrays.asList(
+                Math.log(2.0/5.0) + Math.log(1.0/5.0) + logPriors.get(1)));
+        expectedPredictions.add(Arrays.asList(
                 Math.log(1.0/3.0) + Math.log(1.0/4.0) + logPriors.get(0),
-                Math.log(3.0/5.0) + Math.log(4.0/5.0) + logPriors.get(1))));
-        expectedPredictions.add(new ArrayList<Double>(Arrays.asList(
+                Math.log(3.0/5.0) + Math.log(4.0/5.0) + logPriors.get(1)));
+        expectedPredictions.add(Arrays.asList(
                 Math.log(1.0/3.0) + Math.log(3.0/4.0) + logPriors.get(0),
-                Math.log(3.0/5.0) + Math.log(1.0/5.0) + logPriors.get(1))));
-        
-        LOGGER.log(Level.INFO, "expectedPriors = {0}, expectedPredictions = {1}", new Object[] {
-                logPriors, expectedPredictions});
+                Math.log(3.0/5.0) + Math.log(1.0/5.0) + logPriors.get(1)));
         
         for (int sampleIndex = 0; sampleIndex < Math.pow(2.0, model.getInputDimension());
                 ++sampleIndex) {
-            ArrayList<Double> actualPrediction = model.predict(testInputs[sampleIndex]);
-            ArrayList<Double> expectedPrediction = expectedPredictions.get(sampleIndex);
+            List<Double> actualPrediction = model.predict(testInputs[sampleIndex]);
+            List<Double> expectedPrediction = expectedPredictions.get(sampleIndex);
             for (int klassIndex = 0; klassIndex < model.getNumberOfClasses(); ++klassIndex) {
-                Assert.assertEquals(expectedPrediction.get(klassIndex)
-                        / actualPrediction.get(klassIndex), 1.0, Math.ulp(1.0));
+                Assert.assertEquals("Mismatch(sample=" + sampleIndex + ",klass=" + klassIndex + ")",
+                        1.0, expectedPrediction.get(klassIndex) / actualPrediction.get(klassIndex),
+                        Math.ulp(1.0));
             }
         }
     }
