@@ -3,6 +3,13 @@ package amck.mlmodels;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+//TODO: Add parameter checking to methods.
+//TODO: Rename loop variables to "___Index" for clarity. 
+//TODO: Enforce consistent use of "klass"/"Klass" everywhere. 
+//TODO: USE LIST<>, NOT ARRAYLIST<>, for variable types. Geez, like, what are even you doing?
 
 /**
  * A class for training a Naive Bayes model. The model is initialized so that all classes are given
@@ -10,6 +17,8 @@ import java.util.HashMap;
  * affect the model's output.
  */
 public class NaiveBayesModel {
+    
+    private static final Logger LOGGER = Logger.getLogger(NaiveBayesModel.class.getName());
 
     private ArrayList<Double> logPriors;
     private ArrayList<ArrayList<HashMap<Boolean, Double>>> logLikelihoods;
@@ -21,7 +30,9 @@ public class NaiveBayesModel {
     public static class Builder {
         
         private int inputDim;
+        private boolean inputDimSet;
         private int numOfClasses;
+        private boolean numOfClassesSet;
         
         /**
          * Constructs a Builder object. 
@@ -36,10 +47,8 @@ public class NaiveBayesModel {
          * @return The builder object. 
          */
         public Builder inputDimension(int inputDim) {
-            if (inputDim <= 0)
-                throw new IllegalArgumentException("inputDim " + inputDim
-                        + " must be a positive integer.");
             this.inputDim = inputDim;
+            inputDimSet = true;
             return this;
         }
 
@@ -49,10 +58,8 @@ public class NaiveBayesModel {
          * @return The builder object. 
          */
         public Builder numberOfClasses(int numOfClasses) {
-            if (numOfClasses <= 0)
-                throw new IllegalArgumentException("numOfClasses " + numOfClasses
-                        + " must be a positive integer.");
             this.numOfClasses = numOfClasses;
+            numOfClassesSet = true;
             return this;
         }
         
@@ -62,9 +69,9 @@ public class NaiveBayesModel {
          * @return A new NaiveBayesModel object. 
          */
         public NaiveBayesModel build() {
-            if (numOfClasses <= 0)
+            if (!numOfClassesSet)
                 throw new IllegalStateException("numberOfClasses was not set.");
-            if (inputDim <= 0)
+            if (!inputDimSet)
                 throw new IllegalStateException("inputDimension was not set.");
             return new NaiveBayesModel(inputDim, numOfClasses);
         }
@@ -74,9 +81,9 @@ public class NaiveBayesModel {
      * Constructs a Naive Bayes model which assigns a uniform likelihood to any input.
      * 
      * @param inputDimension
-     *            -- A positive integer.
+     *            - A positive integer.
      * @param numberOfClasses
-     *            -- A positive integer.
+     *            - A positive integer.
      */
     public NaiveBayesModel(int inputDimension, int numberOfClasses) {
         logPriors = new ArrayList<Double>(numberOfClasses);
@@ -126,7 +133,7 @@ public class NaiveBayesModel {
      *         is the predicted value of <code>log P(class==i | input)</code>.
      */
     public ArrayList<Double> predict(boolean[] input) {
-        ArrayList<Double> logProbabilities = new ArrayList<Double>(getNumberOfClasses());
+        ArrayList<Double> logProbabilities = new ArrayList<Double>();
         for (int klass = 0; klass < getNumberOfClasses(); ++klass) {
             double logProbability = logPriors.get(klass);
             for (int inputIndex = 0; inputIndex < getInputDimension(); ++inputIndex) {
@@ -151,14 +158,73 @@ public class NaiveBayesModel {
      */
     public void train(boolean[][] inputs, int[] labels) {
         reset();
-        //TODO: Train the model. 
+        
+        // Initialize the counting data structures.
+        
+        ArrayList<ArrayList<HashMap<Boolean, Double>>> sampleCounts = 
+                new ArrayList<ArrayList<HashMap<Boolean, Double>>>();
+        for (int klassIndex = 0; klassIndex < getNumberOfClasses(); ++klassIndex) {
+            sampleCounts.add(new ArrayList<HashMap<Boolean, Double>>());
+            for (int featureIndex = 0; featureIndex < getInputDimension(); ++featureIndex) {
+                sampleCounts.get(klassIndex).add(new HashMap<Boolean, Double>());
+                sampleCounts.get(klassIndex).get(featureIndex).put(Boolean.TRUE, 0.0);
+                sampleCounts.get(klassIndex).get(featureIndex).put(Boolean.FALSE, 0.0);
+            }
+        }
+        
+        ArrayList<Double> classCounts = new ArrayList<Double>();
+        for (int klassIndex = 0; klassIndex < getNumberOfClasses(); ++klassIndex) {
+            classCounts.add(0.0);
+        }
+        
+        // Count. 
+        
+        for (int sampleIndex = 0; sampleIndex < inputs.length; ++sampleIndex) {
+            int klassIndex = labels[sampleIndex];
+            classCounts.set(klassIndex, classCounts.get(klassIndex) + 1);
+            for (int featureIndex = 0; featureIndex < getInputDimension(); ++featureIndex) {
+                HashMap<Boolean, Double> oldCounts = sampleCounts.get(klassIndex).get(featureIndex);
+                Boolean feature = inputs[sampleIndex][featureIndex];
+                oldCounts.put(feature, oldCounts.get(feature) + 1);
+            }
+        }
+        
+        // Calculate log probabilities. 
+        
+        double sum = 0.0;
+        for (int klassIndex = 0; klassIndex < getNumberOfClasses(); ++klassIndex) {
+            sum = sum + classCounts.get(klassIndex);
+        }
+        for (int klassIndex = 0; klassIndex < getNumberOfClasses(); ++klassIndex) {
+            logPriors.set(klassIndex, Math.log(classCounts.get(klassIndex)/sum));
+        }
+        
+        for (int klassIndex = 0; klassIndex < getNumberOfClasses(); ++klassIndex) {
+            for (int featureIndex = 0; featureIndex < getInputDimension(); ++featureIndex) {
+                //TODO: Think of better prefix here than "local". 
+                HashMap<Boolean, Double> localFeatureCounts = sampleCounts.get(klassIndex)
+                        .get(featureIndex);
+                double totalCount = localFeatureCounts.get(Boolean.TRUE)
+                        + localFeatureCounts.get(Boolean.FALSE);
+                HashMap<Boolean, Double> localLogLikelihoods = logLikelihoods.get(klassIndex)
+                        .get(featureIndex);
+                
+                localLogLikelihoods.put(Boolean.TRUE, Math.log(
+                        localFeatureCounts.get(Boolean.TRUE)/totalCount));
+                localLogLikelihoods.put(Boolean.FALSE, Math.log(
+                        localFeatureCounts.get(Boolean.FALSE)/totalCount));
+            }
+        }
+        
+        LOGGER.log(Level.INFO, "logPriors={0}, logLikelihoods={1}", new Object[] {logPriors,
+                logLikelihoods});
     }
 
     /**
      * @return The number of classes for which this model predicts.
      */
     public int getNumberOfClasses() {
-        return this.logPriors.size();
+        return logPriors.size();
     }
 
     /**
