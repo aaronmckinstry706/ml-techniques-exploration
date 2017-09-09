@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-//TODO: Change inputs to NaiveBayesModel's train/predict functions from arrays to List<>'s. 
-
 /**
  * A class for training a Naive Bayes model. The model is initialized so that all classes are given
  * equal probability, regardless of inputs. Only data passed to the most recent call to train() will
@@ -91,7 +89,7 @@ public class NaiveBayesModel {
         if (numberOfClasses <= 0) {
             throw new IllegalArgumentException("numberOfClasses must be positive.");
         }
-        
+
         logPriors = new ArrayList<Double>(numberOfClasses);
         Double uniformLogPrior = new Double(Math.log(1.0 / numberOfClasses));
         for (int i = 0; i < numberOfClasses; ++i) {
@@ -123,8 +121,8 @@ public class NaiveBayesModel {
     private void reset() {
         Collections.fill(logPriors, new Double(Math.log(1.0 / logPriors.size())));
         for (int klassIndex = 0; klassIndex < logLikelihoods.size(); ++klassIndex) {
-            for (int featureIndex = 0; featureIndex < logLikelihoods.get(klassIndex).size();
-                    ++featureIndex) {
+            for (int featureIndex = 0; featureIndex < logLikelihoods.get(klassIndex)
+                    .size(); ++featureIndex) {
                 logLikelihoods.get(klassIndex).get(featureIndex).put(Boolean.TRUE,
                         new Double(Math.log(0.5)));
                 logLikelihoods.get(klassIndex).get(featureIndex).put(Boolean.FALSE,
@@ -138,22 +136,22 @@ public class NaiveBayesModel {
      * model.
      * 
      * @param input
-     *            - A boolean array of length <code>getInputDimension()</code>.
+     *            - A boolean List of size <code>getInputDimension()</code>.
      * @return logProbabilities - A List&lt;Double&gt;. <code>logProbabilities.get(i)</code> is the
      *         predicted value of <code>log P(class==i | input)</code>.
      */
-    public List<Double> predict(boolean[] input) {
-        if (input.length != getInputDimension()) {
+    public List<Double> predict(List<Boolean> input) {
+        if (input.size() != getInputDimension()) {
             throw new IllegalArgumentException(
                     "input.length must be equal to getInputDimension().");
         }
-        
+
         List<Double> logProbabilities = new ArrayList<Double>();
         for (int klassIndex = 0; klassIndex < getNumberOfClasses(); ++klassIndex) {
             double logProbability = logPriors.get(klassIndex);
             for (int featureIndex = 0; featureIndex < getInputDimension(); ++featureIndex) {
-                logProbability += logLikelihoods.get(klassIndex).get(featureIndex).get(
-                        input[featureIndex]);
+                logProbability += logLikelihoods.get(klassIndex).get(featureIndex)
+                        .get(input.get(featureIndex));
             }
             logProbabilities.add(new Double(logProbability));
         }
@@ -163,20 +161,20 @@ public class NaiveBayesModel {
 
     /**
      * Takes a set of inputs and labels, and trains the model. It must be true that
-     * <code>inputs.length == labels.length</code>; in addition, for all valid <code>i</code>, it
-     * must be true that <code>inputs[i].length == getInputDimension()</code>.
+     * <code>inputs.size() == labels.size()</code>; in addition, for all valid <code>i</code>, it
+     * must be true that <code>inputs.get(i).size() == getInputDimension()</code>.
      * 
      * @param inputs
      *            Matrix of sample inputs.
      * @param labels
-     *            Vector of sample labels. Each value is an integer in the range
+     *            List of sample labels. Each value is an integer in the range
      *            <code>[0, getNumberOfClasses() - 1]</code> (inclusive).
      */
-    public void train(boolean[][] inputs, int[] labels) {
-        if (inputs.length != labels.length) {
+    public void train(List<List<Boolean>> inputs, List<Integer> labels) {
+        if (inputs.size() != labels.size()) {
             throw new IllegalArgumentException("inputs.length must be equal to labels.length.");
         }
-        
+
         reset();
 
         // Initialize the counting data structures.
@@ -198,17 +196,17 @@ public class NaiveBayesModel {
 
         // Count.
 
-        for (int sampleIndex = 0; sampleIndex < inputs.length; ++sampleIndex) {
-            if (inputs[sampleIndex].length != getInputDimension()) {
-                throw new IllegalArgumentException("inputs[i].length must equal getInputDimension()"
-                        + " for all valid i.");
+        for (int sampleIndex = 0; sampleIndex < inputs.size(); ++sampleIndex) {
+            if (inputs.get(sampleIndex).size() != getInputDimension()) {
+                throw new IllegalArgumentException(
+                        "inputs[i].length must equal getInputDimension()" + " for all valid i.");
             }
-            
-            int klassIndex = labels[sampleIndex];
+
+            int klassIndex = labels.get(sampleIndex);
             klassCounts.set(klassIndex, klassCounts.get(klassIndex) + 1);
             for (int featureIndex = 0; featureIndex < getInputDimension(); ++featureIndex) {
                 Map<Boolean, Double> oldCounts = sampleCounts.get(klassIndex).get(featureIndex);
-                Boolean feature = inputs[sampleIndex][featureIndex];
+                Boolean feature = inputs.get(sampleIndex).get(featureIndex);
                 oldCounts.put(feature, oldCounts.get(feature) + 1);
             }
         }

@@ -24,56 +24,56 @@ public class NaiveBayesModelTest {
     public void testUntrainedModel() {
         Double uniformLogProbability = new Double(Math.log(1.0/model.getNumberOfClasses())
                 + model.getInputDimension()*Math.log(0.5));
-        ArrayList<Double> expected = new ArrayList<Double>(model.getNumberOfClasses());
+        List<Double> expected = new ArrayList<Double>(model.getNumberOfClasses());
         expected.add(uniformLogProbability);
         expected.add(uniformLogProbability);
-        boolean[] input = new boolean[model.getInputDimension()];
-        for (int featureIndex = 0; featureIndex < input.length; ++featureIndex) {
-            input[featureIndex] = false;
+        List<Boolean> input = new ArrayList<Boolean>();
+        for (int featureIndex = 0; featureIndex < model.getInputDimension(); ++featureIndex) {
+            input.add(false);
         }
         Assert.assertEquals(expected, model.predict(input));
-        input[model.getNumberOfClasses()/2] = true;
+        input.set(model.getNumberOfClasses()/2, true);
         Assert.assertEquals(expected, model.predict(input));
     }
     
     @Test
     public void testTrainedModel() {
-        boolean[][] samples = new boolean[][] {
-            // Class 0 examples:
-            new boolean[] {true, true},
-            new boolean[] {true, true},
-            new boolean[] {true, true},
-            new boolean[] {true, false},
-            new boolean[] {true, false},
-            new boolean[] {true, false},
-            new boolean[] {true, false},
-            new boolean[] {true, false},
-            new boolean[] {false, false},
-            new boolean[] {false, false},
-            new boolean[] {false, false},
-            new boolean[] {false, false},
-            /**
-             * Correct conditional probabilities for C==0 are:
-             *  P(x0==true  | C==0) = 2/3
-             *  P(x0==false | C==0) = 1/3
-             *  P(x1==true  | C==0) = 1/4
-             *  P(x1==false | C==0) = 3/4
-             */
-            
-            // Class 1 examples:
-            new boolean[] {true, true},
-            new boolean[] {true, true},
-            new boolean[] {false, true},
-            new boolean[] {false, true},
-            new boolean[] {false, false}
-            /**
-             * Correct conditional probabilities for C==1 are:
-             *  P(x0==true  | C==1) = 2/5
-             *  P(x0==false | C==1) = 3/5
-             *  P(x1==true  | C==1) = 4/5
-             *  P(x1==false | C==1) = 1/5
-             */
-        };
+        List<List<Boolean>> samples = Arrays.asList(
+                // Class 0 examples:
+                Arrays.asList(true, true),
+                Arrays.asList(true, true),
+                Arrays.asList(true, true),
+                Arrays.asList(true, false),
+                Arrays.asList(true, false),
+                Arrays.asList(true, false),
+                Arrays.asList(true, false),
+                Arrays.asList(true, false),
+                Arrays.asList(false, false),
+                Arrays.asList(false, false),
+                Arrays.asList(false, false),
+                Arrays.asList(false, false),
+                /**
+                 * Correct conditional probabilities for C==0 are:
+                 *  P(x0==true  | C==0) = 2/3
+                 *  P(x0==false | C==0) = 1/3
+                 *  P(x1==true  | C==0) = 1/4
+                 *  P(x1==false | C==0) = 3/4
+                 */
+
+                // Class 1 examples:
+                Arrays.asList(true, true),
+                Arrays.asList(true, true),
+                Arrays.asList(false, true),
+                Arrays.asList(false, true),
+                Arrays.asList(false, false)
+                /**
+                 * Correct conditional probabilities for C==1 are:
+                 *  P(x0==true  | C==1) = 2/5
+                 *  P(x0==false | C==1) = 3/5
+                 *  P(x1==true  | C==1) = 4/5
+                 *  P(x1==false | C==1) = 1/5
+                 */
+        );
         
         /**
          * Correct priors are:
@@ -81,16 +81,16 @@ public class NaiveBayesModelTest {
          *  P(C==1) = 12/17
          */
         
-        int[] labels = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
+        List<Integer> labels = Arrays.asList(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
         
         model.train(samples, labels);
         
-        boolean[][] testInputs = new boolean[][] {
-            new boolean[] {true, true},
-            new boolean[] {true, false},
-            new boolean[] {false, true},
-            new boolean[] {false, false}
-        };
+        List<List<Boolean>> testInputs = Arrays.asList(
+                Arrays.asList(true, true),
+                Arrays.asList(true, false),
+                Arrays.asList(false, true),
+                Arrays.asList(false, false)
+        );
         
         List<Double> logPriors = Arrays.asList(Math.log(12.0/17.0), Math.log(5.0/17.0));
         
@@ -110,7 +110,7 @@ public class NaiveBayesModelTest {
         
         for (int sampleIndex = 0; sampleIndex < Math.pow(2.0, model.getInputDimension());
                 ++sampleIndex) {
-            List<Double> actualPrediction = model.predict(testInputs[sampleIndex]);
+            List<Double> actualPrediction = model.predict(testInputs.get(sampleIndex));
             List<Double> expectedPrediction = expectedPredictions.get(sampleIndex);
             for (int klassIndex = 0; klassIndex < model.getNumberOfClasses(); ++klassIndex) {
                 Assert.assertEquals("Mismatch(sample=" + sampleIndex + ",klass=" + klassIndex + ")",
